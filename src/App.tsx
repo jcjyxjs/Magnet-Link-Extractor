@@ -53,19 +53,17 @@ const App: React.FC = () => {
   // Function to toggle dark mode
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
+    // Update localStorage to indicate user preference was set manually
+    localStorage.setItem('darkMode', JSON.stringify(!darkMode));
   };
-
-  // Save dark mode preference to localStorage
-  useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
-  }, [darkMode]);
 
   // Listen for system preference changes
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
-      // Only automatically switch if user hasn't manually set a preference
-      if (!localStorage.getItem('darkMode')) {
+      // Only automatically switch if user hasn't manually set a preference in this session
+      const userManualPreference = localStorage.getItem('darkMode');
+      if (userManualPreference === null) {
         setDarkMode(e.matches);
       }
     };
