@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout, Typography, Input, Button, Card, Space, message, FloatButton, ConfigProvider, theme } from 'antd';
 import { CopyOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
 
@@ -9,7 +9,17 @@ const { TextArea } = Input;
 const App: React.FC = () => {
   const [inputText, setInputText] = useState<string>('');
   const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
-  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    // Check system preference for dark mode
+    if (typeof window !== 'undefined') {
+      const savedPreference = localStorage.getItem('darkMode');
+      if (savedPreference !== null) {
+        return JSON.parse(savedPreference);
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
 
   // Function to extract magnet links
   const extractMagnetLinks = () => {
@@ -44,6 +54,39 @@ const App: React.FC = () => {
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
+
+  // Save dark mode preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  // Listen for system preference changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e: MediaQueryListEvent) => {
+      // Only automatically switch if user hasn't manually set a preference
+      if (!localStorage.getItem('darkMode')) {
+        setDarkMode(e.matches);
+      }
+    };
+
+    // Add listener for system preference changes
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else {
+      // For older browsers
+      (mediaQuery as any).addListener(handleChange);
+    }
+
+    // Cleanup listener on unmount
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else {
+        (mediaQuery as any).removeListener(handleChange);
+      }
+    };
+  }, []);
 
   return (
     <ConfigProvider
