@@ -1,0 +1,263 @@
+import React, { useState } from 'react';
+import { Layout, Typography, Input, Button, Card, Space, message, FloatButton, ConfigProvider, theme } from 'antd';
+import { CopyOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
+
+const { Header, Content, Footer } = Layout;
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+
+const App: React.FC = () => {
+  const [inputText, setInputText] = useState<string>('');
+  const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+
+  // Function to extract magnet links
+  const extractMagnetLinks = () => {
+    // Regular expression for magnet links
+    const magnetRegex = /magnet:\?xt=urn:[a-z0-9][a-z0-9]?:[a-z0-9]{32,}|magnet:\?xt=urn:btih:[a-z0-9]{40}/gi;
+    const matches = inputText.match(magnetRegex) || [];
+    
+    // Remove duplicates by converting to Set and back to array
+    const uniqueLinks = Array.from(new Set(matches.map(link => link.trim()).filter(link => link)));
+    
+    setExtractedLinks(uniqueLinks);
+    
+    if (uniqueLinks.length > 0) {
+      message.success(`Found ${uniqueLinks.length} magnet link${uniqueLinks.length > 1 ? 's' : ''}`);
+    } else {
+      message.info('No magnet links found in the provided text');
+    }
+  };
+
+  // Function to copy all links to clipboard
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(extractedLinks.join('\n'));
+      message.success('Copied all magnet links to clipboard!');
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      message.error('Failed to copy links');
+    }
+  };
+
+  // Function to toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  return (
+    <ConfigProvider
+      theme={{
+        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: {
+          fontFamily: 'Cascadia Code, monospace',
+        }
+      }}
+    >
+      <Layout 
+        style={{ 
+          minHeight: '100vh', 
+          fontFamily: 'Cascadia Code, monospace',
+          background: darkMode ? '#141414' : undefined
+        }}
+      >
+        <Header 
+          style={{ 
+            padding: '16px 10px', 
+            height: 'auto', 
+            lineHeight: 'normal', 
+            background: 'transparent' 
+          }}
+        >
+          <Title 
+            style={{ 
+              color: 'rgb(24, 144, 255)', 
+              textAlign: 'center', 
+              margin: 0, 
+              fontSize: '20px',
+              fontFamily: 'Cascadia Code, monospace'
+            }}
+          >
+            Magnet Link Extractor
+          </Title>
+        </Header>
+        <Content 
+          style={{ 
+            padding: '16px', 
+            maxWidth: '800px', 
+            margin: '0 auto', 
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minHeight: 'calc(100vh - 152px)' // Subtract header and footer heights
+          }}
+        >
+          <Card 
+            style={{ 
+              borderRadius: '8px', 
+              boxShadow: darkMode ? '0 4px 12px rgba(255,255,255,0.1)' : '0 4px 12px rgba(0,0,0,0.1)',
+              marginBottom: '16px',
+              fontFamily: 'Cascadia Code, monospace',
+              background: darkMode ? '#1f1f1f' : undefined,
+              color: darkMode ? 'rgba(255, 255, 255, 0.85)' : undefined,
+              flex: 1
+            }}
+            bodyStyle={{ 
+              padding: '16px',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <Space direction="vertical" size="middle" style={{ width: '100%', height: '100%' }}>
+              <div style={{ flex: 1 }}>
+                <Text 
+                  strong 
+                  style={{ 
+                    fontSize: '14px', 
+                    display: 'block', 
+                    marginBottom: '8px',
+                    color: darkMode ? '#177ddc' : '#1890ff',
+                    fontFamily: 'Cascadia Code, monospace'
+                  }}
+                >
+                  Input Text:
+                </Text>
+                <TextArea
+                  rows={7}
+                  placeholder="Paste your text here to extract magnet links..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  style={{ 
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontFamily: 'Cascadia Code, monospace',
+                    background: darkMode ? '#1d1d1d' : undefined,
+                    color: darkMode ? 'rgba(255, 255, 255, 0.85)' : undefined,
+                    border: darkMode ? '1px solid #424242' : undefined,
+                    height: '100%'
+                  }}
+                />
+              </div>
+              
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <Text 
+                  type="secondary" 
+                  style={{ 
+                    fontSize: '12px',
+                    padding: '4px 10px',
+                    backgroundColor: darkMode ? '#262626' : '#f6ffed',
+                    border: darkMode ? '1px solid #424242' : '1px solid #b7eb8f',
+                    borderRadius: '4px',
+                    fontFamily: 'Cascadia Code, monospace'
+                  }}
+                >
+                  {extractedLinks.length > 0 
+                    ? `Found ${extractedLinks.length} magnet link${extractedLinks.length > 1 ? 's' : ''}` 
+                    : 'No magnet links found'}
+                </Text>
+                
+                <Space>
+                  <Button 
+                    type="primary" 
+                    onClick={extractMagnetLinks}
+                    style={{ borderRadius: '6px', fontSize: '13px' }}
+                  >
+                    Extract
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      setInputText('');
+                      setExtractedLinks([]);
+                    }}
+                    style={{ borderRadius: '6px', fontSize: '13px' }}
+                  >
+                    Clear
+                  </Button>
+                </Space>
+              </div>
+              
+              <div style={{ flex: 1 }}>
+                <Text 
+                  strong 
+                  style={{ 
+                    fontSize: '14px', 
+                    display: 'block', 
+                    marginBottom: '8px',
+                    color: darkMode ? '#49aa19' : '#52c41a',
+                    fontFamily: 'Cascadia Code, monospace'
+                  }}
+                >
+                  Extracted Magnet Links:
+                </Text>
+                <TextArea
+                  rows={7}
+                  placeholder="Extracted magnet links will appear here..."
+                  value={extractedLinks.join('\n')}
+                  readOnly
+                  style={{ 
+                    borderRadius: '6px',
+                    fontSize: '13px',
+                    fontFamily: 'Cascadia Code, monospace',
+                    background: darkMode ? '#1d1d1d' : undefined,
+                    color: darkMode ? 'rgba(255, 255, 255, 0.85)' : undefined,
+                    border: darkMode ? '1px solid #424242' : undefined,
+                    height: '100%'
+                  }}
+                />
+              </div>
+              
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                <Button 
+                  type="primary" 
+                  icon={<CopyOutlined />} 
+                  disabled={extractedLinks.length === 0}
+                  onClick={copyToClipboard}
+                  size="middle"
+                  style={{ 
+                    borderRadius: '6px',
+                    fontWeight: 'bold',
+                    fontSize: '13px'
+                  }}
+                >
+                  Copy All Links
+                </Button>
+              </div>
+            </Space>
+          </Card>
+        </Content>
+        <Footer 
+          style={{ 
+            textAlign: 'center', 
+            padding: '16px 10px', 
+            background: 'transparent', 
+            color: darkMode ? 'rgba(255, 255, 255, 0.45)' : '#8c8c8c', 
+            fontFamily: 'Cascadia Code, monospace' 
+          }}
+        >
+          Magnet Link Extractor ©{new Date().getFullYear()}
+        </Footer>
+        
+        <FloatButton
+          icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
+          onClick={toggleDarkMode}
+          style={{ 
+            right: 24,
+            bottom: 24,
+            background: darkMode ? '#177ddc' : '#1890ff'
+          }}
+        />
+      </Layout>
+    </ConfigProvider>
+  );
+};
+
+export default App;
