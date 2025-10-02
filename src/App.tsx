@@ -284,7 +284,7 @@ const App: React.FC = () => {
             fontFamily: 'Cascadia Code, monospace' 
           }}
         >
-          Magnet Link Extractor ©{new Date().getFullYear()}
+          Magnet Link Extractor | BY <a href="https://elstec.cn" style={{ color: darkMode ? 'rgba(255, 255, 255, 0.45)' : '#8c8c8c', textDecoration: 'none' }}>JCJYXJS</a> {new Date().getFullYear()} 
         </Footer>
         
         <FloatButton
