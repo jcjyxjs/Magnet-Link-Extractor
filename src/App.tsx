@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Typography, Input, Button, Card, Space, message, FloatButton, ConfigProvider, theme } from 'antd';
+import { Layout, Typography, Input, Button, Card, Space, message, FloatButton, ConfigProvider, theme, Flex } from 'antd';
 import { CopyOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
 
 const { Header, Content, Footer } = Layout;
@@ -20,6 +20,8 @@ const App: React.FC = () => {
     }
     return false;
   });
+  
+  const [messageApi, contextHolder] = message.useMessage();
 
   // Function to extract magnet links
   const extractMagnetLinks = () => {
@@ -33,9 +35,15 @@ const App: React.FC = () => {
     setExtractedLinks(uniqueLinks);
     
     if (uniqueLinks.length > 0) {
-      message.success(`Found ${uniqueLinks.length} magnet link${uniqueLinks.length > 1 ? 's' : ''}`);
+      messageApi.open({
+        type: 'success',
+        content: `Found ${uniqueLinks.length} magnet link${uniqueLinks.length > 1 ? 's' : ''}`,
+      });
     } else {
-      message.info('No magnet links found in the provided text');
+      messageApi.open({
+        type: 'info',
+        content: 'No magnet links found in the provided text',
+      });
     }
   };
 
@@ -43,10 +51,16 @@ const App: React.FC = () => {
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(extractedLinks.join('\n'));
-      message.success('Copied all magnet links to clipboard!');
+      messageApi.open({
+        type: 'success',
+        content: 'copy success',
+      });
     } catch (err) {
       console.error('Failed to copy: ', err);
-      message.error('Failed to copy links');
+      messageApi.open({
+        type: 'error',
+        content: 'Failed to copy links',
+      });
     }
   };
 
@@ -94,7 +108,11 @@ const App: React.FC = () => {
           fontFamily: 'Cascadia Code, monospace',
         }
       }}
+      wave={{ 
+        disabled: false 
+      }}
     >
+      {contextHolder}
       <Layout 
         style={{ 
           minHeight: '100vh', 
@@ -205,11 +223,12 @@ const App: React.FC = () => {
                     : 'No magnet links found'}
                 </Text>
                 
-                <Space>
+                <Flex gap="small" wrap>
                   <Button 
                     type="primary" 
                     onClick={extractMagnetLinks}
                     style={{ borderRadius: '6px', fontSize: '13px' }}
+                    autoInsertSpace={false}
                   >
                     Extract
                   </Button>
@@ -223,7 +242,7 @@ const App: React.FC = () => {
                   >
                     Clear
                   </Button>
-                </Space>
+                </Flex>
               </div>
               
               <div style={{ flex: 1 }}>
@@ -257,20 +276,23 @@ const App: React.FC = () => {
               </div>
               
               <div style={{ textAlign: 'center', marginTop: '12px' }}>
-                <Button 
-                  type="primary" 
-                  icon={<CopyOutlined />} 
-                  disabled={extractedLinks.length === 0}
-                  onClick={copyToClipboard}
-                  size="middle"
-                  style={{ 
-                    borderRadius: '6px',
-                    fontWeight: 'bold',
-                    fontSize: '13px'
-                  }}
-                >
-                  Copy All Links
-                </Button>
+                <Flex gap="small" wrap justify="center">
+                  <Button 
+                    type="primary" 
+                    icon={<CopyOutlined />} 
+                    disabled={extractedLinks.length === 0}
+                    onClick={copyToClipboard}
+                    size="middle"
+                    style={{ 
+                      borderRadius: '6px',
+                      fontWeight: 'bold',
+                      fontSize: '13px'
+                    }}
+                    autoInsertSpace={false}
+                  >
+                    Copy All Links
+                  </Button>
+                </Flex>
               </div>
             </Space>
           </Card>
