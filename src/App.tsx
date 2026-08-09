@@ -1,325 +1,315 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Typography, Input, Button, Card, Space, message, FloatButton, ConfigProvider, theme, Flex } from 'antd';
-import { CopyOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons';
+import { Button, Fieldset, Frame, List, Modal, TaskBar, TextArea, TitleBar } from '@react95/core';
+import { Copy, Help, InfoBubble, Logo, QuestionBubble, Star, Warning } from '@react95/icons';
 
-const { Header, Content, Footer } = Layout;
-const { Title, Text } = Typography;
-const { TextArea } = Input;
+import './App.css';
+import compass from './compass.svg';
+
+type Message = {
+  kind: 'success' | 'info' | 'error';
+  text: string;
+};
+
+const MAGNET_REGEX =
+  /magnet:\?xt=urn:[a-z0-9][a-z0-9]?:[a-z0-9]{32,}|magnet:\?xt=urn:btih:[a-z0-9]{40}/gi;
+
+type DesktopIconProps = {
+  icon: React.ReactNode;
+  label: string;
+  onOpen: () => void;
+};
+
+const DesktopIcon: React.FC<DesktopIconProps> = ({ icon, label, onOpen }) => {
+  const [selected, setSelected] = useState(false);
+
+  return (
+    <button
+      type="button"
+      className={selected ? 'desktop-icon selected' : 'desktop-icon'}
+      onClick={() => setSelected(true)}
+      onBlur={() => setSelected(false)}
+      onDoubleClick={onOpen}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+};
 
 const App: React.FC = () => {
   const [inputText, setInputText] = useState<string>('');
   const [extractedLinks, setExtractedLinks] = useState<string[]>([]);
+  const [mainOpen, setMainOpen] = useState<boolean>(true);
+  const [aboutOpen, setAboutOpen] = useState<boolean>(false);
+  const [message, setMessage] = useState<Message | null>(null);
   const [darkMode, setDarkMode] = useState<boolean>(() => {
-    // Check system preference for dark mode
-    if (typeof window !== 'undefined') {
-      const savedPreference = localStorage.getItem('darkMode');
-      if (savedPreference !== null) {
-        return JSON.parse(savedPreference);
-      }
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false;
     }
-    return false;
+    const savedPreference = localStorage.getItem('darkMode');
+    if (savedPreference !== null) {
+      return JSON.parse(savedPreference) === true;
+    }
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
-  
-  const [messageApi, contextHolder] = message.useMessage();
-
-  // Function to extract magnet links
-  const extractMagnetLinks = () => {
-    // Regular expression for magnet links
-    const magnetRegex = /magnet:\?xt=urn:[a-z0-9][a-z0-9]?:[a-z0-9]{32,}|magnet:\?xt=urn:btih:[a-z0-9]{40}/gi;
-    const matches = inputText.match(magnetRegex) || [];
-    
-    // Remove duplicates by converting to Set and back to array
-    const uniqueLinks = Array.from(new Set(matches.map(link => link.trim()).filter(link => link)));
-    
-    setExtractedLinks(uniqueLinks);
-    
-    if (uniqueLinks.length > 0) {
-      messageApi.open({
-        type: 'success',
-        content: `Found ${uniqueLinks.length} magnet link${uniqueLinks.length > 1 ? 's' : ''}`,
-      });
-    } else {
-      messageApi.open({
-        type: 'info',
-        content: 'No magnet links found in the provided text',
-      });
-    }
-  };
-
-  // Function to copy all links to clipboard
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(extractedLinks.join('\n'));
-      messageApi.open({
-        type: 'success',
-        content: 'copy success',
-      });
-    } catch (err) {
-      console.error('Failed to copy: ', err);
-      messageApi.open({
-        type: 'error',
-        content: 'Failed to copy links',
-      });
-    }
-  };
-
-  // Function to toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    // Update localStorage to indicate user preference was set manually
-    localStorage.setItem('darkMode', JSON.stringify(!darkMode));
-  };
 
   // Listen for system preference changes
   useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return;
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
-      // Only automatically switch if user hasn't manually set a preference in this session
-      const userManualPreference = localStorage.getItem('darkMode');
-      if (userManualPreference === null) {
+      // Only automatically switch if user hasn't manually set a preference
+      if (localStorage.getItem('darkMode') === null) {
         setDarkMode(e.matches);
       }
     };
-
-    // Add listener for system preference changes
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange);
-    } else {
-      // For older browsers
-      (mediaQuery as any).addListener(handleChange);
-    }
-
-    // Cleanup listener on unmount
-    return () => {
-      if (mediaQuery.removeEventListener) {
-        mediaQuery.removeEventListener('change', handleChange);
-      } else {
-        (mediaQuery as any).removeListener(handleChange);
-      }
-    };
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
-  return (
-    <ConfigProvider
-      theme={{
-        algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
-        token: {
-          fontFamily: 'Cascadia Code, monospace',
-        }
-      }}
-      wave={{ 
-        disabled: false 
-      }}
-    >
-      {contextHolder}
-      <Layout 
-        style={{ 
-          minHeight: '100vh', 
-          fontFamily: 'Cascadia Code, monospace',
-          background: darkMode ? '#141414' : undefined
-        }}
+  // Auto-dismiss message boxes
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(null), 3000);
+    return () => clearTimeout(timer);
+  }, [message]);
+
+  const extractMagnetLinks = () => {
+    const matches = inputText.match(MAGNET_REGEX) || [];
+    const uniqueLinks = Array.from(new Set(matches.map((link) => link.trim()).filter(Boolean)));
+
+    setExtractedLinks(uniqueLinks);
+
+    if (uniqueLinks.length > 0) {
+      setMessage({
+        kind: 'success',
+        text: `Found ${uniqueLinks.length} magnet link${uniqueLinks.length > 1 ? 's' : ''}`,
+      });
+    } else {
+      setMessage({ kind: 'info', text: 'No magnet links found in the provided text' });
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(extractedLinks.join('\n'));
+      setMessage({ kind: 'success', text: 'Copy success' });
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      setMessage({ kind: 'error', text: 'Failed to copy links' });
+    }
+  };
+
+  const clearAll = () => {
+    setInputText('');
+    setExtractedLinks([]);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      localStorage.setItem('darkMode', JSON.stringify(!prev));
+      return !prev;
+    });
+  };
+
+  const startMenu = (
+    <List>
+      <List.Item
+        icon={<img src={compass} alt="" width={32} height={32} />}
+        onClick={() => setMainOpen(true)}
       >
-        <Header 
-          style={{ 
-            padding: '16px 10px', 
-            height: 'auto', 
-            lineHeight: 'normal', 
-            background: 'transparent' 
-          }}
-        >
-          <Title 
-            style={{ 
-              color: 'rgb(24, 144, 255)', 
-              textAlign: 'center', 
-              margin: 0, 
-              fontSize: '20px',
-              fontFamily: 'Cascadia Code, monospace'
-            }}
-          >
-            Magnet Link Extractor
-          </Title>
-        </Header>
-        <Content 
-          style={{ 
-            padding: '16px', 
-            maxWidth: '800px', 
-            margin: '0 auto', 
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            minHeight: 'calc(100vh - 152px)' // Subtract header and footer heights
-          }}
-        >
-          <Card 
-            style={{ 
-              borderRadius: '8px', 
-              boxShadow: darkMode ? '0 4px 12px rgba(255,255,255,0.1)' : '0 4px 12px rgba(0,0,0,0.1)',
-              marginBottom: '16px',
-              fontFamily: 'Cascadia Code, monospace',
-              background: darkMode ? '#1f1f1f' : undefined,
-              color: darkMode ? 'rgba(255, 255, 255, 0.85)' : undefined,
-              flex: 1
-            }}
-            bodyStyle={{ 
-              padding: '16px',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
-            <Space direction="vertical" size="middle" style={{ width: '100%', height: '100%' }}>
-              <div style={{ flex: 1 }}>
-                <Text 
-                  strong 
-                  style={{ 
-                    fontSize: '14px', 
-                    display: 'block', 
-                    marginBottom: '8px',
-                    color: darkMode ? '#177ddc' : '#1890ff',
-                    fontFamily: 'Cascadia Code, monospace'
-                  }}
-                >
-                  Input Text:
-                </Text>
-                <TextArea
-                  rows={7}
-                  placeholder="Paste your text here to extract magnet links..."
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  style={{ 
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontFamily: 'Cascadia Code, monospace',
-                    background: darkMode ? '#1d1d1d' : undefined,
-                    color: darkMode ? 'rgba(255, 255, 255, 0.85)' : undefined,
-                    border: darkMode ? '1px solid #424242' : undefined,
-                    height: '100%'
-                  }}
-                />
-              </div>
-              
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '8px'
-              }}>
-                <Text 
-                  type="secondary" 
-                  style={{ 
-                    fontSize: '12px',
-                    padding: '4px 10px',
-                    backgroundColor: darkMode ? '#262626' : '#f6ffed',
-                    border: darkMode ? '1px solid #424242' : '1px solid #b7eb8f',
-                    borderRadius: '4px',
-                    fontFamily: 'Cascadia Code, monospace'
-                  }}
-                >
-                  {extractedLinks.length > 0 
-                    ? `Found ${extractedLinks.length} magnet link${extractedLinks.length > 1 ? 's' : ''}` 
-                    : 'No magnet links found'}
-                </Text>
-                
-                <Flex gap="small" wrap>
-                  <Button 
-                    type="primary" 
-                    onClick={extractMagnetLinks}
-                    style={{ borderRadius: '6px', fontSize: '13px' }}
-                    autoInsertSpace={false}
-                  >
-                    Extract
-                  </Button>
-                  
-                  <Button 
-                    onClick={() => {
-                      setInputText('');
-                      setExtractedLinks([]);
-                    }}
-                    style={{ borderRadius: '6px', fontSize: '13px' }}
-                  >
-                    Clear
-                  </Button>
-                </Flex>
-              </div>
-              
-              <div style={{ flex: 1 }}>
-                <Text 
-                  strong 
-                  style={{ 
-                    fontSize: '14px', 
-                    display: 'block', 
-                    marginBottom: '8px',
-                    color: darkMode ? '#49aa19' : '#52c41a',
-                    fontFamily: 'Cascadia Code, monospace'
-                  }}
-                >
-                  Extracted Magnet Links:
-                </Text>
-                <TextArea
-                  rows={7}
-                  placeholder="Extracted magnet links will appear here..."
-                  value={extractedLinks.join('\n')}
-                  readOnly
-                  style={{ 
-                    borderRadius: '6px',
-                    fontSize: '13px',
-                    fontFamily: 'Cascadia Code, monospace',
-                    background: darkMode ? '#1d1d1d' : undefined,
-                    color: darkMode ? 'rgba(255, 255, 255, 0.85)' : undefined,
-                    border: darkMode ? '1px solid #424242' : undefined,
-                    height: '100%'
-                  }}
-                />
-              </div>
-              
-              <div style={{ textAlign: 'center', marginTop: '12px' }}>
-                <Flex gap="small" wrap justify="center">
-                  <Button 
-                    type="primary" 
-                    icon={<CopyOutlined />} 
-                    disabled={extractedLinks.length === 0}
-                    onClick={copyToClipboard}
-                    size="middle"
-                    style={{ 
-                      borderRadius: '6px',
-                      fontWeight: 'bold',
-                      fontSize: '13px'
-                    }}
-                    autoInsertSpace={false}
-                  >
-                    Copy All Links
-                  </Button>
-                </Flex>
-              </div>
-            </Space>
-          </Card>
-        </Content>
-        <Footer 
-          style={{ 
-            textAlign: 'center', 
-            padding: '16px 10px', 
-            background: 'transparent', 
-            color: darkMode ? 'rgba(255, 255, 255, 0.45)' : '#8c8c8c', 
-            fontFamily: 'Cascadia Code, monospace' 
-          }}
-        >
-          Magnet Link Extractor | BY <a href="https://elstec.cn" style={{ color: darkMode ? 'rgba(255, 255, 255, 0.45)' : '#8c8c8c', textDecoration: 'none' }}>JCJYXJS</a> {new Date().getFullYear()} 
-        </Footer>
-        
-        <FloatButton
-          icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
-          onClick={toggleDarkMode}
-          style={{ 
-            right: 24,
-            bottom: 24,
-            background: darkMode ? '#177ddc' : '#1890ff'
-          }}
+        Magnet Link Extractor
+      </List.Item>
+      <List.Item
+        icon={<Help width={32} height={32} />}
+        onClick={() => setAboutOpen(true)}
+      >
+        About
+      </List.Item>
+      <List.Divider />
+      <List.Item
+        icon={<Star width={32} height={32} variant="32x32_4" />}
+        onClick={toggleDarkMode}
+      >
+        {darkMode ? 'Light Mode' : 'Dark Mode'}
+      </List.Item>
+      <List.Item
+        icon={<Logo width={32} height={32} variant="32x32_4" />}
+        onClick={() => window.open('https://elstec.cn', '_blank', 'noopener,noreferrer')}
+      >
+        elstec.cn
+      </List.Item>
+    </List>
+  );
+
+  const windowStyle: React.CSSProperties = {
+    top: 72,
+    left: 0,
+    right: 0,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    maxWidth: 'calc(100vw - 16px)',
+  };
+
+  return (
+    <div className={darkMode ? 'desktop r95-dark' : 'desktop'}>
+      <div className="desktop-icons">
+        <DesktopIcon
+          icon={<img src={compass} alt="" width={32} height={32} />}
+          label="Magnet Link Extractor"
+          onOpen={() => setMainOpen(true)}
         />
-      </Layout>
-    </ConfigProvider>
+        <DesktopIcon
+          icon={<Help width={32} height={32} />}
+          label="About"
+          onOpen={() => setAboutOpen(true)}
+        />
+      </div>
+
+      {mainOpen && (
+        <Modal
+          id="magnet-extractor"
+          icon={<img src={compass} alt="" width={16} height={16} />}
+          title="Magnet Link Extractor"
+          w="620px"
+          style={windowStyle}
+          titleBarOptions={
+            <>
+              <Modal.Minimize />
+              <TitleBar.Close onClick={() => setMainOpen(false)} />
+            </>
+          }
+        >
+          <div className="window-body">
+            <Frame display="flex" justifyContent="flex-end" mb="$4">
+              <Button onClick={toggleDarkMode}>
+                {darkMode ? 'Light Mode' : 'Dark Mode'}
+              </Button>
+            </Frame>
+
+            <Fieldset legend="Input Text">
+              <TextArea
+                w="100%"
+                rows={7}
+                placeholder="Paste your text here to extract magnet links..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+              />
+            </Fieldset>
+
+            <Frame
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              flexWrap="wrap"
+              gap="$4"
+              my="$4"
+            >
+              <Frame px="$6" py="$2" boxShadow="$in">
+                {extractedLinks.length > 0
+                  ? `Found ${extractedLinks.length} magnet link${extractedLinks.length > 1 ? 's' : ''}`
+                  : 'No magnet links found'}
+              </Frame>
+
+              <Frame display="flex" gap="$4">
+                <Button onClick={extractMagnetLinks}>Extract</Button>
+                <Button onClick={clearAll}>Clear</Button>
+              </Frame>
+            </Frame>
+
+            <Fieldset legend="Extracted Magnet Links">
+              <TextArea
+                w="100%"
+                rows={7}
+                readOnly
+                placeholder="Extracted magnet links will appear here..."
+                value={extractedLinks.join('\n')}
+              />
+            </Fieldset>
+
+            <Frame display="flex" justifyContent="center" mt="$4">
+              <Button onClick={copyToClipboard} disabled={extractedLinks.length === 0}>
+                <Copy width={16} height={16} variant="16x16_4" style={{ marginRight: 4 }} />
+                Copy All Links
+              </Button>
+            </Frame>
+
+            <Frame display="flex" justifyContent="center" mt="$4">
+              <span className="credit">
+                Magnet Link Extractor | BY{' '}
+                <a href="https://elstec.cn" target="_blank" rel="noopener noreferrer">
+                  JCJYXJS
+                </a>{' '}
+                {new Date().getFullYear()}
+              </span>
+            </Frame>
+          </div>
+        </Modal>
+      )}
+
+      {aboutOpen && (
+        <Modal
+          id="about"
+          icon={<Help width={16} height={16} variant="16x16_4" />}
+          title="About"
+          w="380px"
+          style={windowStyle}
+          buttons={[{ value: 'OK', onClick: () => setAboutOpen(false) }]}
+        >
+          <div className="window-body">
+            <Frame display="flex" alignItems="flex-start" gap="$4" p="$4">
+              <Help width={32} height={32} />
+              <div>
+                <p>
+                  <strong>Magnet Link Extractor</strong>
+                  <br />
+                  Extracts magnet links from any text. Built with{' '}
+                  <a href="https://github.com/react95-io/React95" target="_blank" rel="noopener noreferrer">
+                    React95
+                  </a>
+                  .
+                </p>
+                <p>
+                  BY{' '}
+                  <a href="https://elstec.cn" target="_blank" rel="noopener noreferrer">
+                    JCJYXJS
+                  </a>{' '}
+                  {new Date().getFullYear()}
+                </p>
+              </div>
+            </Frame>
+          </div>
+        </Modal>
+      )}
+
+      {message && (
+        <Modal
+          id="message"
+          icon={<Help width={16} height={16} variant="16x16_4" />}
+          title={
+            message.kind === 'error' ? 'Error' : message.kind === 'info' ? 'Information' : 'Success'
+          }
+          w="360px"
+          style={{ ...windowStyle, top: '35%' }}
+          buttons={[{ value: 'OK', onClick: () => setMessage(null) }]}
+        >
+          <div className="window-body">
+            <Frame display="flex" alignItems="center" gap="$4" p="$4">
+              {message.kind === 'error' ? (
+                <Warning width={32} height={32} variant="32x32_4" />
+              ) : message.kind === 'info' ? (
+                <QuestionBubble width={32} height={32} variant="32x32_32" />
+              ) : (
+                <InfoBubble width={32} height={32} variant="32x32_4" />
+              )}
+              <span>{message.text}</span>
+            </Frame>
+          </div>
+        </Modal>
+      )}
+
+      <TaskBar list={startMenu} />
+    </div>
   );
 };
 

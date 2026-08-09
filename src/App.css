@@ -1,38 +1,94 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+.desktop {
   min-height: 100vh;
+  background-color: #008080;
+  padding-bottom: 40px;
+  user-select: none;
+}
+
+.desktop-icons {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px;
+  width: 90px;
+}
+
+.desktop-icon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  gap: 4px;
+  padding: 6px 4px;
+  background: transparent;
+  border: 1px dotted transparent;
+  cursor: default;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+  color: #ffffff;
+  text-shadow: 1px 1px 0 #000000;
+  text-align: center;
+  width: 78px;
 }
 
-.App-link {
-  color: #61dafb;
+.desktop-icon:focus {
+  outline: none;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.desktop-icon.selected {
+  border: 1px dotted #ffffff;
+  background: rgba(0, 14, 122, 0.45);
+}
+
+.desktop-icon span {
+  max-width: 74px;
+}
+
+.credit {
+  font-size: 12px;
+}
+
+.r95_1lxkvz40:not(:has(svg)) {
+  padding-inline-start: 6px;
+}
+
+/* Dark mode overrides (based on the React95 "modernDark" theme) */
+.r95-dark {
+  background-color: #101418;
+}
+
+.r95-dark {
+  --r95-color-anchor: #1034a6;
+  --r95-color-anchorVisited: #440381;
+  --r95-color-borderDark: #121317;
+  --r95-color-borderDarkest: #000000;
+  --r95-color-borderLight: #31323c;
+  --r95-color-borderLighter: #85879b;
+  --r95-color-borderLightest: #bbbdc8;
+  --r95-color-canvas: #000000;
+  --r95-color-canvasText: #4b4d58;
+  --r95-color-headerBackground: #4b4d58;
+  --r95-color-headerNotActiveBackground: transparent;
+  --r95-color-headerNotActiveText: #4b4d58;
+  --r95-color-headerText: #202127;
+  --r95-color-material: #202127;
+  --r95-color-materialText: #f88702;
+  --r95-color-materialTextDisabled: #4b4d58;
+  --r95-color-materialTextDisabledShadow: #121317;
+  --r95-color-materialTextInvert: #202127;
+  --r95-color-progress: #f88702;
+  --r95-color-inputBackground: #ffffff;
+  --r95-color-inputBackgroundDisabled: #31323c;
+  --r95-shadow-out: inset 0.5px 0.5px 0px 0.5px #bbbdc8,
+    inset 0 0 0 1px #121317,
+    1px 0px 0 0px #000000,
+    0px 1px 0 0px #000000,
+    1px 1px 0 0px #000000;
+  --r95-shadow-in: inset 0px 0px 0px 0px,
+    inset 1px 1px 0px 0px #121317,
+    0.5px 0.5px 0px 0.5px #bbbdc8;
+  --r95-shadow-input: inset -1px -1px 0 0 #202127,
+    inset 1px 1px 0 0 #000000,
+    0.5px 0.5px 0 0.5px #bbbdc8;
 }

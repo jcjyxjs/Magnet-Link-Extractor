@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import '@react95/core/GlobalStyle';
+import '@react95/core/themes/win95.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import 'antd/dist/reset.css';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
